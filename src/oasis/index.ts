@@ -1,13 +1,21 @@
+/**
+ * @title OBJ Loader Use Model Mesh
+ * @category Mesh
+ */
+import {OrbitControl} from "@oasis-engine/controls";
 import {
     BlinnPhongMaterial,
     Camera,
+    Color,
+    DirectLight,
     MeshRenderer,
-    PrimitiveMesh,
+    MeshTopology,
+    ModelMesh,
     Vector3,
-    WebGLEngine,
+    WebGLEngine
 } from "oasis-engine";
 
-export function createOasis() {
+export function createOasis(): void {
     const engine = new WebGLEngine("canvas");
     engine.canvas.resizeByClientSize();
     const scene = engine.sceneManager.activeScene;
@@ -16,26 +24,43 @@ export function createOasis() {
     // init camera
     const cameraEntity = rootEntity.createChild("camera");
     cameraEntity.addComponent(Camera);
-    const pos = cameraEntity.transform.position;
-    pos.setValue(10, 10, 10);
-    cameraEntity.transform.position = pos;
+    cameraEntity.addComponent(OrbitControl);
+    cameraEntity.transform.setPosition(0.5, 0.5, 0.5);
     cameraEntity.transform.lookAt(new Vector3(0, 0, 0));
 
     // init light
-    scene.ambientLight.diffuseSolidColor.setValue(1, 1, 1, 1);
-    scene.ambientLight.diffuseIntensity = 1.2;
+    rootEntity.addComponent(DirectLight);
 
-    // init cube
-    const cubeEntity = rootEntity.createChild("cube");
-    const renderer = cubeEntity.addComponent(MeshRenderer);
-    const mtl = new BlinnPhongMaterial(engine);
-    const color = mtl.baseColor;
-    color.r = 0.0;
-    color.g = 0.8;
-    color.b = 0.5;
-    color.a = 1.0;
-    renderer.mesh = PrimitiveMesh.createCuboid(engine);
-    renderer.setMaterial(mtl);
+    fetch("https://gw.alipayobjects.com/os/bmw-prod/b885a803-5315-44f0-af54-6787ec47ed1b.obj")
+        .then((res) => res.text())
+        .then((objText) => {
+            const lines = objText.split(/\n/);
+            const positions: Vector3[] = [];
+            const indices: number[] = [];
+            lines
+                .map((lineText) => lineText.split(" "))
+                .forEach((parseTexts) => {
+                    if (parseTexts[0] === "v") {
+                        positions.push(new Vector3(parseFloat(parseTexts[1]), parseFloat(parseTexts[2]), parseFloat(parseTexts[3])));
+                    } else if (parseTexts[0] === "f") {
+                        indices.push(parseInt(parseTexts[1]) - 1, parseInt(parseTexts[2]) - 1, parseInt(parseTexts[3]) - 1);
+                    }
+                });
+
+            const mesh = new ModelMesh(engine);
+            mesh.setPositions(positions);
+            mesh.setIndices(Uint16Array.from(indices));
+            mesh.addSubMesh(0, indices.length, MeshTopology.Triangles);
+            mesh.uploadData(false);
+
+            // init cube
+            const cubeEntity = rootEntity.createChild("cube");
+            const renderer = cubeEntity.addComponent(MeshRenderer);
+            renderer.mesh = mesh;
+            const material = new BlinnPhongMaterial(engine);
+            material.baseColor = new Color(1, 0.25, 0.25, 1);
+            renderer.setMaterial(material);
+        });
 
     engine.run();
 }
