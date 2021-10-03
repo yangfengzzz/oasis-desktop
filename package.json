@@ -21,7 +21,7 @@
     "forge": {
       "packagerConfig": {
         "name": "Oasis-Desktop",
-        "icon": "./icons/icon.png"
+        "icon": "./icons/icon.ico"
       },
       "makers": [
         {
