@@ -25,6 +25,7 @@ tsconfig.tsbuildinfo
 oasis-npm
 api
 
+.webpack/
 out/
 yarn.lock
 package-lock.json
